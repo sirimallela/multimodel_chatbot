@@ -31,6 +31,7 @@ export default function App() {
 
   const [name, setName] = useState("");
   const [symptom, setSymptom] = useState("");
+  const [freeText, setFreeText] = useState("");
   const [days, setDays] = useState("");
   const [symptoms, setSymptoms] = useState([]);
   const [result, setResult] = useState(null);
@@ -38,6 +39,8 @@ export default function App() {
   const [age, setAge] = useState("");
   const [history, setHistory] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [suggestions, setSuggestions] = useState([]);
+
 
   const addSymptom = () => {
     if (symptom.trim() && !symptoms.includes(symptom)) {
@@ -51,10 +54,11 @@ export default function App() {
   };
 
   const analyze = async () => {
-    if (symptoms.length === 0) {
-      alert("Please add at least one symptom");
+    if (symptoms.length === 0 && freeText.trim() === "") {
+      alert("Please add symptoms or describe them in text");
       return;
     }
+
 
     setLoading(true);
     setResult(null);
@@ -67,9 +71,12 @@ export default function App() {
         },
         body: JSON.stringify({
           symptoms: symptoms,
+          text: freeText,
           days: days || 1,
           age: age || 0,
-        }),
+        })
+
+
       });
 
       const data = await res.json();
@@ -125,6 +132,17 @@ export default function App() {
             />
           </div>
 
+          <div style={styles.formGroup}>
+            <label style={styles.label}>Describe Symptoms (NLP)</label>
+            <textarea
+              style={styles.textarea}
+              placeholder="Example: I have high fever and chest pain"
+              value={freeText}
+              onChange={(e) => setFreeText(e.target.value)}
+            />
+          </div>
+
+
           <div style={styles.section}>
             <label style={styles.label}>Symptoms</label>
 
@@ -134,7 +152,25 @@ export default function App() {
                   style={styles.input}
                   placeholder="Type a symptom (e.g., fever)"
                   value={symptom}
-                  onChange={(e) => setSymptom(e.target.value)}
+                  onChange={async (e) => {
+                    const val = e.target.value;
+                    setSymptom(val);
+
+                    if (val.length >= 2) {
+                      try {
+                        const res = await fetch(
+                          `http://127.0.0.1:5000/suggest-symptoms?q=${val}`
+                        );
+                        const data = await res.json();
+                        setSuggestions(data);
+                      } catch {
+                        setSuggestions([]);
+                      }
+                    } else {
+                      setSuggestions([]);
+                    }
+                  }}
+
                   onKeyDown={(e) => e.key === "Enter" && addSymptom()}
                 />
               </div>
@@ -142,6 +178,25 @@ export default function App() {
                 Add
               </button>
             </div>
+
+            {suggestions.length > 0 && (
+              <div style={styles.suggestBox}>
+                {suggestions.map((s) => (
+                  <div
+                    key={s}
+                    style={styles.suggestItem}
+                    onClick={() => {
+                      setSymptoms([...symptoms, s]);
+                      setSymptom("");
+                      setSuggestions([]);
+                    }}
+                  >
+                    {s}
+                  </div>
+                ))}
+              </div>
+            )}
+
 
 
             <div style={styles.tags}>
@@ -587,6 +642,36 @@ const styles = {
     fontSize: 12,
     color: "#475569",
   },
+
+  textarea: {
+    width: "100%",
+    minHeight: 90,
+    padding: 12,
+    borderRadius: 10,
+    border: "1px solid #cbd5e1",
+    fontSize: 14,
+    resize: "vertical",
+    boxSizing: "border-box",
+  },
+  suggestBox: {
+      background: "white",
+      border: "1px solid #dbeafe",
+      borderRadius: 10,
+      marginTop: 6,
+      maxHeight: 150,
+      overflowY: "auto",
+      boxShadow: "0 8px 20px rgba(0,0,0,0.08)",
+      zIndex: 5
+    },
+
+    suggestItem: {
+      padding: "8px 12px",
+      cursor: "pointer",
+      borderBottom: "1px solid #eef2f7",
+      fontSize: 14
+    }
+
+
 
 
 };

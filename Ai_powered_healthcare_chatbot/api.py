@@ -3,7 +3,7 @@ from flask_cors import CORS
 import sqlite3
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask import send_file
-from chat_bot import get_result, match_symptom, symptoms_dict
+from chat_bot import get_result, match_symptom, symptoms_dict, extract_symptoms_from_text
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, ListFlowable, ListItem
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.pagesizes import A4
@@ -214,14 +214,18 @@ def download_file(filename):
 
 @app.route("/predict", methods=["POST"])
 def predict():
+
     data = request.json
+
     user_symptoms = data.get("symptoms", [])
+    text_input = data.get("text", "") or ""
+
     days = int(data.get("days", 1))
     age = int(data.get("age", 0))
 
-
     final_symptoms = []
 
+    # -------- TAG SYMPTOMS --------
     for s in user_symptoms:
         s = s.lower().strip().replace(" ", "_")
 
@@ -229,35 +233,28 @@ def predict():
             final_symptoms.append(s)
         else:
             matches = match_symptom(s)
-            if matches:
-                for m in matches:
-                    if m not in final_symptoms:
-                        final_symptoms.append(m)
+            final_symptoms.extend(matches)
 
+    # -------- NLP SYMPTOMS --------
+    if text_input:
+        nlp_found = extract_symptoms_from_text(text_input)
+        for s in nlp_found:
+            if s not in final_symptoms:
+                final_symptoms.append(s)
+
+    # -------- DEBUG PRINT (IMPORTANT) --------
+    print("FINAL SYMPTOMS USED:", final_symptoms)
 
     if not final_symptoms:
         return jsonify({"error": "No valid symptoms found"})
-    
 
+    # -------- MODEL --------
     condition, results = get_result(final_symptoms, days)
 
-    # Doctor recommendation logic
     doctor = "Home Care"
 
     if condition == "consult":
         doctor = "General Physician"
-
-        chest_related = ["chest_pain", "breathlessness", "shortness_of_breath"]
-        respiratory = ["cough", "cold", "breathing_problem"]
-
-        for s in final_symptoms:
-            if s in chest_related:
-                doctor = "Cardiologist"
-                break
-            if s in respiratory:
-                doctor = "Pulmonologist"
-                break
-
 
     if age >= 60:
         risk_note = "Risk is higher for elderly patients."
@@ -271,6 +268,13 @@ def predict():
         "diseases": results
     })
 
+@app.route("/suggest-symptoms")
+def suggest_symptoms():
+    q = request.args.get("q", "").lower().replace(" ", "_")
+
+    matches = match_symptom(q)
+
+    return jsonify(matches[:5])  # top 5 suggestions
 
 
 

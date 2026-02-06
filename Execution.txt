@@ -1,0 +1,56 @@
+In your project you have **two folders**:
+
+1. **Backend (Flask + ML)** – runs the AI logic
+2. **Frontend (React UI)** – runs the website
+
+Both must run **at the same time** in **two terminals**.
+
+---
+
+## 🔹 Step 1: Run the Backend (Flask)
+
+1. Open **Command Prompt / PowerShell**
+2. Go to your backend folder (where `api.py` is):
+
+```bash
+cd C:\Users\MALLELA SUPRIYA\OneDrive\Desktop\healthcare-chatbot
+```
+
+3. Run the backend:
+
+```bash
+python api.py
+```
+
+You should see something like:
+
+```
+Running on http://127.0.0.1:5000/
+```
+
+**Keep this terminal open.**
+This is your AI server.
+
+---
+
+## 🔹 Step 2: Run the Frontend (React)
+
+1. Open **another Command Prompt / PowerShell** (new window)
+2. Go to your React project:
+
+```bash
+cd C:\Users\MALLELA SUPRIYA\OneDrive\Desktop\healthcare-ui
+```
+
+3. Start React:
+
+```bash
+npm start
+```
+
+It will open in the browser at:
+
+```
+http://localhost:3000
+```
+

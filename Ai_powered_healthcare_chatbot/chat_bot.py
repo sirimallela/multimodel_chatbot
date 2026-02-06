@@ -7,6 +7,9 @@ warnings.filterwarnings("ignore")
 
 from sklearn.preprocessing import LabelEncoder
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.naive_bayes import GaussianNB
+from sklearn.linear_model import LogisticRegression
+
 from sklearn.model_selection import train_test_split
 
 np.random.seed(42)
@@ -32,8 +35,20 @@ X_train, X_test, y_train, y_test = train_test_split(
     X, y_encoded, test_size=0.25, random_state=0, stratify=y_encoded
 )
 
-clf = RandomForestClassifier(n_estimators=100, max_depth=10, random_state=0)
-clf.fit(X_train, y_train)
+rf_model = RandomForestClassifier(
+    n_estimators=100,
+    max_depth=10,
+    random_state=0
+)
+
+nb_model = GaussianNB()
+
+lr_model = LogisticRegression(max_iter=1000)
+
+rf_model.fit(X_train, y_train)
+nb_model.fit(X_train, y_train)
+lr_model.fit(X_train, y_train)
+
 
 # =========================
 # LOAD AUX DATA
@@ -85,10 +100,17 @@ def predict_disease(symptoms):
     for s in symptoms:
         vec[symptoms_dict[s]] = 1
 
-    probs = clf.predict_proba([vec])[0]
+    rf_probs = rf_model.predict_proba([vec])[0]
+    nb_probs = nb_model.predict_proba([vec])[0]
+    lr_probs = lr_model.predict_proba([vec])[0]
+
+    # ✅ Soft voting ensemble
+    probs = (rf_probs + nb_probs + lr_probs) / 3
+
     idx = np.argsort(probs)[-3:][::-1]
 
     return list(zip(le.inverse_transform(idx), probs[idx]))
+
 
 def rule_based_override(symptoms):
     if "mild_fever" in symptoms and "headache" in symptoms:
@@ -114,3 +136,23 @@ def get_result(symptoms, days):
             })
 
     return condition, final
+
+
+
+def extract_symptoms_from_text(text):
+
+    text = text.lower()
+    words = re.sub(r"[^a-z\s]", " ", text).split()
+
+    found = []
+
+    for w in words:
+        matches = match_symptom(w)
+        for m in matches:
+            if m not in found:
+                found.append(m)
+
+    return found
+
+
+
