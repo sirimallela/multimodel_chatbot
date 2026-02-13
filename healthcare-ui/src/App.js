@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import "./App.css";
+import ChatbotWidget from "./ChatbotWidget";
+
 
 
 export default function App() {
@@ -131,17 +133,6 @@ export default function App() {
               onChange={(e) => setAge(e.target.value)}
             />
           </div>
-
-          <div style={styles.formGroup}>
-            <label style={styles.label}>Describe Symptoms (NLP)</label>
-            <textarea
-              style={styles.textarea}
-              placeholder="Example: I have high fever and chest pain"
-              value={freeText}
-              onChange={(e) => setFreeText(e.target.value)}
-            />
-          </div>
-
 
           <div style={styles.section}>
             <label style={styles.label}>Symptoms</label>
@@ -372,6 +363,8 @@ export default function App() {
           ))}
         </div>
       </div>
+
+      <ChatbotWidget />
 
     </motion.div>
       
